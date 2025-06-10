@@ -1,0 +1,30 @@
+{% extends 'chart/base.html' %}
+{% load static avatar_tags %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+  <section class="profile-page">
+    <h1>Личный кабинет</h1>
+
+    <form method="post" enctype="multipart/form-data" class="profile-form">
+      {% csrf_token %}
+      <fieldset>
+        <legend>Учётная запись</legend>
+        {{ uform.as_p }}
+      </fieldset>
+      <fieldset>
+        <legend>Аватарка</legend>
+        {% if user.profile.avatar %}
+          <img src="data:image/png;base64,{{ user.profile.avatar|b64encode }}"
+               alt="Avatar" class="avatar-preview">
+        {% else %}
+          <p>Аватарка не задана.</p>
+        {% endif %}
+        {{ pform.avatar.label_tag }}<br>
+        {{ pform.avatar }}<br>
+      </fieldset>
+      <button type="submit" name="save_profile">Сохранить</button>
+    </form>
+  </section>
+{% endblock %}
