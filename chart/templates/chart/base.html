@@ -4,14 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>{% block title %}ChartHaven{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'chart/images/logotype.png' %}">
+    <meta name="theme-color" content="#01295f">
+    <script>
+    window.__CHART_UI_THEME__ = {% if user.is_authenticated %}"{{ user.profile.ui_theme|default:'light'|escapejs }}"{% else %}null{% endif %};
+    </script>
+    <script>
+    (function(){
+      try {
+        var t = null;
+        if (typeof window.__CHART_UI_THEME__ === "string" && (window.__CHART_UI_THEME__ === "dark" || window.__CHART_UI_THEME__ === "light")) {
+          t = window.__CHART_UI_THEME__;
+        }
+        if (t === null) {
+          t = localStorage.getItem("chart-theme");
+        }
+        if (t === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      } catch (e) {}
+    })();
+    </script>
+    <title>{% block title %}Charthaven{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'chart/css/reset.css' %}">
-    <link rel="stylesheet" href="{% static 'chart/css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'chart/css/login.css' %}">
-    <link rel="stylesheet" href="{% static 'chart/css/register.css' %}">
-    <link rel="stylesheet" href="{% static 'chart/css/profile.css' %}">
+    <link rel="stylesheet" href="{% static 'chart/css/styles.css' %}?v=31">
+    <link rel="stylesheet" href="{% static 'chart/css/auth.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'chart/css/profile.css' %}?v=8">
+    <link rel="stylesheet" href="{% static 'chart/css/theme.css' %}?v=14">
 </head>
 <body>
+{% csrf_token %}
 <div class="app-container">
 
     {% include 'chart/partials/modals.html' %}
@@ -19,32 +41,52 @@
     <!-- Верхняя шапка -->
     <header class="header flex">
         {% if request.resolver_match.url_name == 'index' %}
-        <button class="burger" id="burgerBtn" aria-label="Открыть меню">
-            <span></span><span></span><span></span>
+        <button type="button" class="burger" id="burgerBtn" aria-label="Открыть меню" aria-expanded="false" aria-controls="chart-sidebar">
+            <span class="burger__line" aria-hidden="true"></span>
+            <span class="burger__line" aria-hidden="true"></span>
+            <span class="burger__line" aria-hidden="true"></span>
         </button>
         {% endif %}
         <div class="logo">
-            <a href="{% url 'index' %}"><img src="{% static 'chart/images/mainLOGO#2.png' %}" alt="Logo"></a>
+            <a href="{% url 'index' %}">
+                <img class="logo-img logo-img--light" src="{% static 'chart/images/Main-logo.png' %}" alt="Charthaven logo">
+                <img class="logo-img logo-img--dark" src="{% static 'chart/images/Main-logo-dark.png' %}" alt="Charthaven logo">
+            </a>
         </div>
         <div class="user flex">
+            <button type="button" class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+                <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </span>
+                <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                </span>
+            </button>
             {% if user.is_authenticated %}
             <div class="user-dropdown">
-                <a href="#" class="user-btn flex" id="userToggle">
-                    {% if user.profile.avatar %}
-                    <img class="user-logo" src="data:image/png;base64,{{ user.profile.avatar|b64encode }}" alt="Avatar">
-                    {% else %}
-                    <svg class="user-logo" viewBox="0 0 25 26">…</svg>
-                    {% endif %}
-                    <p>{{ user.username }}</p>
-                </a>
-                <div class="user-menu" id="userMenu">
-                    <a href="{% url 'profile' %}">Личный кабинет</a>
-                    <a href="{% url 'logout' %}">Выйти</a>
+                <button type="button" class="user-btn" id="userToggle" aria-haspopup="true" aria-expanded="false" aria-label="Меню: {{ user.username }}">
+                    <span class="user-avatar-wrap">
+                        {% if user.profile.avatar %}
+                        <img class="user-avatar-img" src="data:image/png;base64,{{ user.profile.avatar|b64encode }}" alt="">
+                        {% else %}
+                        <svg class="user-avatar-placeholder" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                        {% endif %}
+                    </span>
+                    <span class="user-name" title="{{ user.username }}">{{ user.username }}</span>
+                    <svg class="user-chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                        <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M2.5 4.5L6 8l3.5-3.5"/>
+                    </svg>
+                </button>
+                <div class="user-menu" id="userMenu" role="menu">
+                    <a href="{% url 'profile' %}" role="menuitem">Личный кабинет</a>
+                    <a href="{% url 'logout' %}" role="menuitem" id="logout-link">Выйти</a>
                 </div>
             </div>
             {% else %}
-            <a href="{% url 'login' %}" class="btn">Войти</a>
-            <a href="{% url 'register' %}" class="btn">Регистрация</a>
+            <a href="{% url 'login' %}" class="btn-auth btn-auth--login">Войти</a>
+            <a href="{% url 'register' %}" class="btn-auth btn-auth--register">Регистрация</a>
             {% endif %}
         </div>
 
@@ -53,29 +95,33 @@
 
     {% block content %}{% endblock %}
 
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
 </div>
 
 <!-- Подключение Plotly -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
-<script src="{% static 'chart/js/script.js' %}" defer></script>
+<script src="{% static 'chart/js/chart-core.js' %}?v=1" defer></script>
+<script src="{% static 'chart/js/chart-workspace.js' %}?v=1" defer></script>
+<script src="{% static 'chart/js/chart-saved.js' %}?v=1" defer></script>
+<script src="{% static 'chart/js/chart-init.js' %}?v=1" defer></script>
+<script src="{% static 'chart/js/theme.js' %}?v=3" defer></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
       const toggleBtn = document.getElementById("userToggle");
       const menu = document.getElementById("userMenu");
 
-      if (toggleBtn) {
+      if (toggleBtn && menu) {
         toggleBtn.addEventListener("click", function (e) {
-          e.preventDefault();
-          menu.style.display = (menu.style.display === "block") ? "none" : "block";
+          e.stopPropagation();
+          const open = menu.style.display === "block";
+          menu.style.display = open ? "none" : "block";
+          toggleBtn.setAttribute("aria-expanded", open ? "false" : "true");
         });
 
-        // Закрытие по клику вне
         document.addEventListener("click", function (e) {
           if (!toggleBtn.contains(e.target) && !menu.contains(e.target)) {
             menu.style.display = "none";
+            toggleBtn.setAttribute("aria-expanded", "false");
           }
         });
       }

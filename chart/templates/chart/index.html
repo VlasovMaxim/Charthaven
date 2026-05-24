@@ -1,12 +1,13 @@
 {% extends 'chart/base.html' %}
-{% block title %}Визуализация данных{% endblock %}
+{% load static %}
+{% block title %}Charthaven{% endblock %}
 
 {% block content %}
 <!-- Основной контент -->
     <div class="main-layout">
       <!-- Боковая панель -->
-      <aside class="sidebar">
-        <!-- Фиксированные горизонтальные вкладки -->
+      <aside class="sidebar" id="chart-sidebar">
+        <!-- Вкладки: сетка 2×2, без горизонтального скролла -->
         <div class="sidebar-header">
           <a href="#" class="tab-item active" data-tab="tab-1">Загрузка данных</a>
           <a href="#" class="tab-item disabled" data-tab="tab-2">Настройки графика</a>
@@ -19,6 +20,7 @@
             <div class="upload-section">
               <h2>Загрузка данных</h2>
               <form id="upload-form" action="/upload/" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
                 <div class="form-group upload flex">
                   <label for="file" class="file-label">Выберите файл (CSV или Excel):</label>
                   <input type="file" id="file" name="file" accept=".csv, .xlsx, .xls" class="file-input" required>
@@ -174,6 +176,25 @@
                     </svg>
                     <p>Гистограмма</p>
                   </div>
+                  <div class="chart-card" data-type="scatter">
+                    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <rect width="64" height="64" fill="none"/>
+                      <circle cx="12" cy="48" r="4" fill="#437F97"/>
+                      <circle cx="22" cy="28" r="4" fill="#FD151B"/>
+                      <circle cx="36" cy="40" r="4" fill="#849324"/>
+                      <circle cx="44" cy="18" r="4" fill="#437F97"/>
+                      <circle cx="52" cy="34" r="4" fill="#FFB30F"/>
+                    </svg>
+                    <p>Точечная диаграмма</p>
+                  </div>
+                  <div class="chart-card" data-type="area">
+                    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <rect width="64" height="64" fill="none"/>
+                      <path d="M8 44 L18 36 L28 40 L38 22 L48 28 L56 18 L56 52 L8 52 Z" fill="#437F97" fill-opacity="0.35" stroke="#437F97" stroke-width="2"/>
+                      <path d="M8 44 L18 36 L28 40 L38 22 L48 28 L56 18" fill="none" stroke="#FD151B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p>Диаграмма с областями</p>
+                  </div>
                 </div>
               </div>
 
@@ -273,7 +294,7 @@
                   </select>
                 </div>
                 <div class="form-group color">
-                  <label for="pie-custom-colors">Пользовательские цвета:</label>
+                  <label>Пользовательские цвета:</label>
                   <div id="pie-custom-colors" class="color-palette flex">
                     <div class="pie-color-buttons flex">
                       <button type="button" id="add-color" class="submit-btn add-color-btn">Добавить цвет</button>
@@ -315,118 +336,253 @@
                 </div>
               </div>
 
-              <!-- Кнопка для дополнительных настроек -->
-              <!--<button id="toggle-advanced-settings-btn" class="submit-btn advanced-settings-btn flex">
-                <span>Дополнительные настройки</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>-->
+              <div id="scatter-chart-settings" class="chart-settings hidden">
+                <div class="form-group choice-x">
+                  <label for="scatter-x-axis">Ось X:</label>
+                  <select id="scatter-x-axis" class="input-select"></select>
+                </div>
+                <div class="form-group choice-y">
+                  <label for="scatter-y-axis">Ось Y:</label>
+                  <select id="scatter-y-axis" class="input-select"></select>
+                </div>
+                <div class="form-group color">
+                  <label for="scatter-color">Цвет точек:</label>
+                  <input type="color" id="scatter-color" class="input-color" value="#437F97">
+                </div>
+                <div class="form-group title">
+                  <label for="scatter-title">Заголовок графика:</label>
+                  <input type="text" id="scatter-title" class="input-text" placeholder="Введите заголовок">
+                </div>
+                <div class="form-group title_x">
+                  <label for="scatter-x-axis-label">Подпись оси X:</label>
+                  <input type="text" id="scatter-x-axis-label" class="input-text" placeholder="Введите подпись оси X">
+                </div>
+                <div class="form-group title_y">
+                  <label for="scatter-y-axis-label">Подпись оси Y:</label>
+                  <input type="text" id="scatter-y-axis-label" class="input-text" placeholder="Введите подпись оси Y">
+                </div>
+              </div>
 
-              <!-- Секция дополнительных настроек -->
-              <!--<div id="advanced-settings" class="advanced-settings hidden">
-                <div class="form-group font-family">
-                  <label for="chart-font-family">Шрифт:</label>
-                  <select id="chart-font-family" class="input-select">
-                    <option value="Arial">Arial</option>
-                    <option value="Verdana">Verdana</option>
-                    <option value="Tahoma">Tahoma</option>
-                    <option value="Times New Roman">Times New Roman</option>
-                  </select>
+              <div id="area-chart-settings" class="chart-settings hidden">
+                <div class="form-group choice-x">
+                  <label for="area-x-axis">Ось X:</label>
+                  <select id="area-x-axis" class="input-select"></select>
                 </div>
-                <div class="form-group font-color">
-                  <label for="chart-font-color">Цвет шрифта:</label>
-                  <input type="color" id="chart-font-color" class="input-color" value="#000000">
+                <div class="form-group choice-y">
+                  <label for="area-y-axis">Ось Y:</label>
+                  <select id="area-y-axis" class="input-select"></select>
                 </div>
-                <div class="form-group grid-display">
-                  <label>
-                    <input type="checkbox" id="chart-show-grid" checked>
-                    Отображение сетки
-                  </label>
+                <div class="form-group color">
+                  <label for="area-color">Цвет области:</label>
+                  <input type="color" id="area-color" class="input-color" value="#437F97">
                 </div>
-                <div class="form-group legend-display">
-                  <label>
-                    <input type="checkbox" id="chart-show-legend" checked>
-                    Отображение легенды
-                  </label>
+                <div class="form-group title">
+                  <label for="area-title">Заголовок графика:</label>
+                  <input type="text" id="area-title" class="input-text" placeholder="Введите заголовок">
                 </div>
-                <div class="form-group legend-position">
-                  <label for="chart-legend-position">Положение легенды:</label>
-                  <select id="chart-legend-position" class="input-select">
-                    <option value="top">Сверху</option>
-                    <option value="bottom">Снизу</option>
-                    <option value="left">Слева</option>
-                    <option value="right">Справа</option>
-                  </select>
+                <div class="form-group title_x">
+                  <label for="area-x-axis-label">Подпись оси X:</label>
+                  <input type="text" id="area-x-axis-label" class="input-text" placeholder="Введите подпись оси X">
                 </div>
-              </div>-->
+                <div class="form-group title_y">
+                  <label for="area-y-axis-label">Подпись оси Y:</label>
+                  <input type="text" id="area-y-axis-label" class="input-text" placeholder="Введите подпись оси Y">
+                </div>
+              </div>
 
-              <!-- Кнопка для создания графика -->
-              <button id="create-chart-btn" class="submit-btn">Создать график</button>
+              <div class="advanced-settings-wrap">
+                <button type="button" id="toggle-advanced-settings-btn" class="advanced-settings-btn"
+                  aria-expanded="false" aria-controls="advanced-settings">
+                  <span>Дополнительные настройки</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="advanced-settings-btn__chevron" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                <div id="advanced-settings" class="advanced-settings" inert>
+                  <p class="advanced-settings__lead">Шрифт подписей, сетка осей, легенда и цвет фона применяются при построении и сохранении графика.</p>
+                  <div class="form-group font-family">
+                    <label for="chart-font-family">Шрифт подписей:</label>
+                    <select id="chart-font-family" class="input-select">
+                      <option value="Arial, sans-serif">Arial</option>
+                      <option value="Verdana, sans-serif">Verdana</option>
+                      <option value="Tahoma, sans-serif">Tahoma</option>
+                      <option value="'Times New Roman', serif">Times New Roman</option>
+                      <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                    </select>
+                  </div>
+                  <div class="form-group font-color">
+                    <label for="chart-font-color">Цвет текста подписей:</label>
+                    <input type="color" id="chart-font-color" class="input-color" value="#333333">
+                  </div>
+                  <div class="form-group bg-color">
+                    <label for="chart-bg-color">Цвет фона графика:</label>
+                    <input type="color" id="chart-bg-color" class="input-color" value="#ffffff">
+                  </div>
+                  <div class="form-group grid-display">
+                    <label class="advanced-settings__check">
+                      <input type="checkbox" id="chart-show-grid" checked>
+                      Показывать сетку осей
+                    </label>
+                  </div>
+                  <div class="form-group legend-display">
+                    <label class="advanced-settings__check">
+                      <input type="checkbox" id="chart-show-legend" checked>
+                      Показывать легенду
+                    </label>
+                  </div>
+                  <div class="form-group legend-position">
+                    <label for="chart-legend-position">Положение легенды:</label>
+                    <select id="chart-legend-position" class="input-select">
+                      <option value="top">Сверху</option>
+                      <option value="bottom">Снизу</option>
+                      <option value="left">Слева</option>
+                      <option value="right">Справа</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <p class="chart-hint">График строится автоматически при выборе типа и изменении настроек.</p>
+              <button type="button" id="save-chart-btn" class="submit-btn save-chart-btn">Сохранить график</button>
             </div>
           </div>
 
           <div class="tab-content" id="tab-3">
-            <h2>Мои сохранённые графики</h2>
-            <div id="savedChartsContainer">
-              <!-- сюда JS подгрузит список -->
+            <div class="saved-charts-panel">
+              <h2 class="saved-charts-heading">Сохранённые графики</h2>
+              <div class="saved-charts-controls">
+                <input type="search" id="saved-charts-search" class="saved-charts-search" placeholder="Поиск по файлу или названию…" autocomplete="off" />
+                <div class="saved-charts-selects">
+                  <label class="sr-only" for="saved-charts-sort">Сортировка</label>
+                  <select id="saved-charts-sort" class="saved-charts-select">
+                    <option value="date_desc">Сначала новые</option>
+                    <option value="date_asc">Сначала старые</option>
+                    <option value="file_asc">По имени файла</option>
+                    <option value="title_asc">По названию графика</option>
+                    <option value="type_asc">По типу графика</option>
+                  </select>
+                  <label class="sr-only" for="saved-charts-group">Группировка</label>
+                  <select id="saved-charts-group" class="saved-charts-select">
+                    <option value="none">Без группировки</option>
+                    <option value="file">По файлу</option>
+                    <option value="type">По типу</option>
+                    <option value="day">По дате</option>
+                  </select>
+                </div>
+              </div>
+              <div id="savedChartsContainer" class="saved-charts-list"></div>
+              <p id="saved-charts-message" class="saved-charts-message" hidden></p>
             </div>
           </div>
 
           <div class="tab-content" id="tab-4">
-            <div class="about-section">
-              <h2>О приложении ChartHaven</h2>
-              <p><strong>ChartHaven</strong> — это современное веб-приложение для визуализации и анализа ваших данных без необходимости программирования.</p>
-              <ul>
-                <li>Загружайте CSV или Excel-файлы</li>
-                <li>Стройте линейные, столбчатые, круговые диаграммы и гистограммы</li>
-                <li>Гибко настраивайте внешний вид графиков</li>
-                <li>Сохраняйте и скачивайте свои визуализации</li>
-                <li>Работает на всех устройствах: ПК, планшетах и смартфонах</li>
-              </ul>
-              <p>Исходный код: <a href="https://github.com/your-org/charthaven" target="_blank">github.com/your-org/charthaven</a></p>
-              <p>Обратная связь: <a href="mailto:support@charthaven.com">support@charthaven.com</a></p>
+            <div class="about-page">
+              <header class="about-hero about-hero--animate">
+                <div class="about-hero__badge" aria-hidden="true">
+                  <img
+                    class="about-hero__logo"
+                    src="{% static 'chart/images/logotype.png' %}"
+                    width="44"
+                    height="44"
+                    alt=""
+                    decoding="async"
+                  />
+                </div>
+                <div class="about-hero__text">
+                  <h2 class="about-hero__title">ChartHaven</h2>
+                  <p class="about-hero__tagline">Визуализация данных без кода</p>
+                </div>
+              </header>
+
+              <p class="about-lead about-lead--animate">
+                <strong>ChartHaven</strong> — веб-приложение для построения графиков и диаграмм из ваших таблиц: загрузили файл, выбрали тип и настройки — готово.
+              </p>
+
+              <section class="about-features about-features--animate" aria-label="Возможности">
+                <h3 class="about-features__heading">Что умеет приложение</h3>
+                <ul class="about-features__list">
+                  <li class="about-features__item">
+                    <span class="about-features__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                    </span>
+                    <span>Загрузка CSV и Excel</span>
+                  </li>
+                  <li class="about-features__item">
+                    <span class="about-features__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                    </span>
+                    <span>Линейные, точечные, столбчатые, круговые, гистограммы, с областями</span>
+                  </li>
+                  <li class="about-features__item">
+                    <span class="about-features__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                    </span>
+                    <span>Настройка внешнего вида: шрифты, сетка, легенда</span>
+                  </li>
+                  <li class="about-features__item">
+                    <span class="about-features__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                    </span>
+                    <span>Сохранение графиков в аккаунте и экспорт в PNG, SVG, JPEG</span>
+                  </li>
+                  <li class="about-features__item">
+                    <span class="about-features__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                    </span>
+                    <span>Адаптивный интерфейс для ПК, планшетов и смартфонов</span>
+                  </li>
+                </ul>
+              </section>
+
+              <footer class="about-footer about-footer--animate">
+                <a class="about-link about-link--external" href="https://github.com/your-org/charthaven" target="_blank" rel="noopener noreferrer">
+                  <span class="about-link__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.602-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.919.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z"/></svg>
+                  </span>
+                  <span class="about-link__text">Исходный код на GitHub</span>
+                </a>
+                <a class="about-link about-link--mail" href="mailto:support@charthaven.com">
+                  <span class="about-link__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                  </span>
+                  <span class="about-link__text">support@charthaven.com</span>
+                </a>
+              </footer>
             </div>
           </div>
         </div>
       </aside>
       <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-      <!-- Центральный блок -->
+      <!-- Центральный блок: область графика -->
       <main class="content-area">
-        <!-- Центральная шапка -->
-        <section class="content-header flex">
-          <h1 id="chart-title-header"></h1>
-          <div class="scale-download-container flex">
-            <!-- <div class="scale flex">
-              <a class="minus flex" href="#">
-                <svg viewBox="0 0 17 2" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 1H16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </a>
-              <p class="scale-text flex">100%</p>
-              <a class="plus" href="#">
-                <svg viewBox="0 0 17 17" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 8.5H16M8.5 1V16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </a>
-            </div> -->
-            <a class="download flex" href="#">
-              <svg class="download-btn" viewBox="0 0 55 42" xmlns="http://www.w3.org/2000/svg">
-                <rect width="54.5" height="41.75" rx="10" />
-                <path d="M20 31.75H34.5M27.25 10V26.9167M27.25 26.9167L33.2917 20.875M27.25 26.9167L21.2083 20.875"
-                  stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </a>
+        <section class="chart-workspace" aria-label="Область построения графика">
+          <header class="chart-toolbar flex">
+            <h1 id="chart-title-header" class="chart-title" lang="ru"></h1>
+            <div class="chart-toolbar__actions">
+              <div class="download-toolbar flex">
+                <label class="download-format-label" for="chart-download-format">Формат</label>
+                <select id="chart-download-format" class="download-format-select" aria-label="Формат файла для скачивания">
+                  <option value="png">PNG</option>
+                  <option value="svg">SVG</option>
+                  <option value="jpeg">JPEG</option>
+                </select>
+                <button type="button" id="chart-download-btn" class="chart-download-btn" title="Скачать график" aria-label="Скачать график">
+                  <svg class="chart-download-btn__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <div class="chart-body">
+            <div class="chart-surface">
+              <div id="chart-container"></div>
+            </div>
           </div>
-        </section>
-
-
-        <!-- Контент -->
-        <section class="content">
-          <!-- Контейнер для отображения графика -->
-          <div id="chart-container"></div>
         </section>
       </main>
     </div>

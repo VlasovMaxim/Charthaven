@@ -1,13 +1,37 @@
 {% extends 'chart/base.html' %}
-{% block title %}Войти{% endblock %}
+{% load static %}
+{% block title %}Вход — Charthaven{% endblock %}
 {% block content %}
-  <div class="auth-container">
-    <h2>Вход</h2>
-    <form method="post">{% csrf_token %}
-      <p><label>Логин: <input type="text" name="username"></label></p>
-      <p><label>Пароль: <input type="password" name="password"></label></p>
-      <button type="submit">Войти</button>
-    </form>
-  </div>
-{% endblock %}
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="page-back-wrap">
+      <a href="{% url 'index' %}" class="page-back">На главную</a>
+    </div>
+    <h1 class="auth-card__title">Вход</h1>
+    <p class="auth-card__subtitle">Введите логин и пароль, чтобы открыть свои графики и сохранённые файлы.</p>
 
+    {% if messages %}
+    <ul class="auth-messages">
+      {% for message in messages %}
+      <li class="auth-messages__item {{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" class="auth-form" action="{% url 'login' %}">
+      {% csrf_token %}
+      <div class="auth-field">
+        <label for="id-login-username">Логин</label>
+        <input type="text" name="username" id="id-login-username" autocomplete="username" required maxlength="150">
+      </div>
+      <div class="auth-field">
+        <label for="id-login-password">Пароль</label>
+        <input type="password" name="password" id="id-login-password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="auth-submit">Войти</button>
+    </form>
+
+    <p class="auth-footer">Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>
+  </div>
+</div>
+{% endblock %}

@@ -1,12 +1,52 @@
 {% extends 'chart/base.html' %}
-{% block title %}Регистрация{% endblock %}
+{% load static %}
+{% block title %}Регистрация — Charthaven{% endblock %}
 {% block content %}
-  <div class="register-container">
-    <h2>Регистрация</h2>
-    <form method="post">{% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit">Зарегистрироваться</button>
-    </form>
-  </div>
-{% endblock %}
+<div
+  class="auth-shell"
+  id="register-page-config"
+  data-check-username-url="{% url 'register_check_username' %}"
+  data-validate-password-url="{% url 'register_validate_password' %}"
+>
+  <div class="auth-card">
+    <div class="page-back-wrap">
+      <a href="{% url 'index' %}" class="page-back">На главную</a>
+    </div>
+    <h1 class="auth-card__title">Регистрация</h1>
+    <p class="auth-card__subtitle">Придумайте логин и пароль.</p>
 
+    {% if messages %}
+    <ul class="auth-messages">
+      {% for message in messages %}
+      <li class="auth-messages__item {{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" class="auth-form" action="{% url 'register' %}">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="auth-field">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.name == 'username' %}
+        <p class="auth-live-hint" id="live-username" hidden></p>
+        {% elif field.name == 'password1' %}
+        <p class="auth-live-hint" id="live-password1" hidden></p>
+        {% elif field.name == 'password2' %}
+        <p class="auth-live-hint" id="live-password2" hidden></p>
+        {% endif %}
+        {% if field.help_text %}
+        <span class="auth-helptext">{{ field.help_text|safe }}</span>
+        {% endif %}
+        {{ field.errors }}
+      </div>
+      {% endfor %}
+      <button type="submit" class="auth-submit">Зарегистрироваться</button>
+    </form>
+
+    <p class="auth-footer">Уже есть аккаунт? <a href="{% url 'login' %}">Войти</a></p>
+  </div>
+</div>
+<script src="{% static 'chart/js/register.js' %}?v=2"></script>
+{% endblock %}

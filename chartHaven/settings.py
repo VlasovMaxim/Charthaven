@@ -116,6 +116,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# Продакшен: после collectstatic можно включить хэши в именах файлов:
+# STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+
 APPEND_SLASH = True
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

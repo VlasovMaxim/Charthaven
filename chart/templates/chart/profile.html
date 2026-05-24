@@ -1,30 +1,101 @@
-{% extends 'chart/base.html' %}
+{% extends "chart/base.html" %}
 {% load static avatar_tags %}
 
-{% block title %}Личный кабинет{% endblock %}
+{% block title %}Личный кабинет — {{ block.super }}{% endblock %}
 
 {% block content %}
-  <section class="profile-page">
-    <h1>Личный кабинет</h1>
+<div
+  class="profile-page"
+  id="profile-page-config"
+  data-verify-url="{% url 'verify_current_password' %}"
+  data-check-username-url="{% url 'profile_check_username' %}"
+>
+  <div class="profile-page__inner">
+    <header class="profile-page__header">
+      <div class="page-back-wrap">
+        <a href="{% url 'index' %}" class="page-back">На главную</a>
+      </div>
+      <h1 class="profile-page__title">Личный кабинет</h1>
+      <p class="profile-page__subtitle">Данные учётной записи и смена пароля</p>
+    </header>
 
-    <form method="post" enctype="multipart/form-data" class="profile-form">
-      {% csrf_token %}
-      <fieldset>
-        <legend>Учётная запись</legend>
-        {{ uform.as_p }}
-      </fieldset>
-      <fieldset>
-        <legend>Аватарка</legend>
-        {% if user.profile.avatar %}
-          <img src="data:image/png;base64,{{ user.profile.avatar|b64encode }}"
-               alt="Avatar" class="avatar-preview">
-        {% else %}
-          <p>Аватарка не задана.</p>
-        {% endif %}
-        {{ pform.avatar.label_tag }}<br>
-        {{ pform.avatar }}<br>
-      </fieldset>
-      <button type="submit" name="save_profile">Сохранить</button>
-    </form>
-  </section>
+    {% if messages %}
+    <ul class="profile-messages">
+      {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="profile-grid">
+      <section class="profile-card profile-card--account" aria-labelledby="profile-account-heading">
+        <h2 id="profile-account-heading" class="profile-card__title">Учётная запись</h2>
+        <form method="post" class="profile-form" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          {% if user.profile.avatar %}
+          <div class="profile-current-avatar">
+            <p class="profile-current-avatar__label">Текущая аватарка</p>
+            <img class="avatar-preview" src="data:image/png;base64,{{ user.profile.avatar|b64encode }}" alt="Текущая аватарка" width="120" height="120">
+          </div>
+          {% endif %}
+          <div class="profile-form__fields">
+            {% for field in uform %}
+            <div class="profile-field">
+              <label class="profile-field__label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.name == 'username' %}
+              <p class="profile-live-hint" id="live-username" hidden></p>
+              {% endif %}
+              {% if field.help_text %}<p class="profile-field__hint">{{ field.help_text }}</p>{% endif %}
+              {% for err in field.errors %}<p class="profile-field__error">{{ err }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+            {% for field in pform %}
+            <div class="profile-field">
+              <label class="profile-field__label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<p class="profile-field__hint">{{ field.help_text }}</p>{% endif %}
+              {% for err in field.errors %}<p class="profile-field__error">{{ err }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+          </div>
+          <div class="profile-form__actions">
+            <button type="submit" name="save_profile" value="1" class="profile-btn profile-btn--primary">Сохранить</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="profile-card profile-card--password" aria-labelledby="profile-password-heading">
+        <h2 id="profile-password-heading" class="profile-card__title">Смена пароля</h2>
+        <form method="post" class="profile-form profile-form--password" novalidate>
+          {% csrf_token %}
+          {% if pass_form.non_field_errors %}
+          <div class="profile-form__nonfield">{{ pass_form.non_field_errors }}</div>
+          {% endif %}
+          <div class="profile-form__fields">
+            {% for field in pass_form %}
+            <div class="profile-field">
+              <label class="profile-field__label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.name == 'old_password' %}
+              <p class="profile-live-hint" id="live-old_password" hidden></p>
+              {% elif field.name == 'new_password1' %}
+              <p class="profile-live-hint" id="live-new_password1" hidden></p>
+              {% elif field.name == 'new_password2' %}
+              <p class="profile-live-hint" id="live-new_password2" hidden></p>
+              {% endif %}
+              {% if field.help_text %}<p class="profile-field__hint">{{ field.help_text }}</p>{% endif %}
+              {% for err in field.errors %}<p class="profile-field__error">{{ err }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+          </div>
+          <div class="profile-form__actions">
+            <button type="submit" name="change_password" value="1" class="profile-btn profile-btn--secondary">Сменить пароль</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>
+<script src="{% static 'chart/js/profile.js' %}?v=3"></script>
 {% endblock %}

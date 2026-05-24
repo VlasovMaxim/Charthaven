@@ -1,0 +1,480 @@
+================================================================================
+ОПИСАНИЕ ВЕБ-ПРИЛОЖЕНИЯ «CHARTHAVEN» (ВИЗУАЛИЗАЦИЯ ДАННЫХ)
+Материал для подготовки глав 2 «Проектирование» и 3 «Реализация» дипломной работы
+================================================================================
+Дата подготовки описания: 05.04.2026
+Предметная область: фундаментальная информатика и информационные технологии
+
+--------------------------------------------------------------------------------
+1. НАЗНАЧЕНИЕ И ОБЩАЯ ХАРАКТЕРИСТИКА СИСТЕМЫ
+--------------------------------------------------------------------------------
+
+Веб-приложение предназначено для загрузки табличных данных (CSV, Excel),
+их предпросмотра, интерактивного построения диаграмм различных типов в браузере
+и (для зарегистрированных пользователей) сохранения построенных графиков
+в персональную коллекцию с возможностью последующей загрузки и удаления.
+
+Ключевые возможности:
+  • Работа без авторизации: загрузка файла, привязка к сессии браузера,
+    построение графика без сохранения в «библиотеку».
+  • Регистрация, вход, выход; личный кабинет (логин, аватар, смена пароля).
+  • Светлая/тёмная тема интерфейса; для авторизованных — сохранение выбора
+    темы в профиле на сервере, для гостей — в localStorage.
+  • Типы диаграмм: линейная, столбчатая, круговая, гистограмма, точечная,
+    с областями (реализация на сервере через библиотеку Plotly).
+  • Настройки оформления: заголовок, подписи осей, цвета, стиль линии,
+    число корзин для гистограммы, шрифт, сетка, легенда, фон.
+  • Экспорт графика (через Plotly на клиенте) с учётом темы.
+  • REST-подобные JSON-эндпоинты для загрузки, построения графика,
+    списка сохранённых графиков, получения/удаления графика по id.
+
+Стек технологий (реализация):
+  • Сервер: Python, фреймворк Django (в проекте указана версия 5.2 в
+    комментариях settings; в requirements — Django >= 4.2).
+  • СУБД: MySQL (основная конфигурация в chartHaven/settings.py);
+    для автотестов — SQLite в памяти (chartHaven/settings_test.py).
+  • Обработка данных: pandas, numpy; чтение Excel — openpyxl (через pandas).
+  • Визуализация на сервере: plotly (graph_objects, express); сериализация
+    trace/layout в JSON для отрисовки на клиенте.
+  • Клиент: HTML/CSS/JavaScript; отрисовка — Plotly.js с CDN;
+    анимации — GSAP (CDN).
+
+ВАЖНО для диплома и безопасности: в файле settings.py хранятся SECRET_KEY
+и параметры подключения к MySQL. В тексте диплома указывают, что «секретные
+ключи и учётные данные задаются в конфигурации и не публикуются»; в репозиторий
+для продакшена их выносят в переменные окружения (.env) и не коммитят.
+
+
+--------------------------------------------------------------------------------
+2. СТРУКТУРА КАТАЛОГОВ ПРОЕКТА (ВЫСОКИЙ УРОВЕНЬ)
+--------------------------------------------------------------------------------
+
+charthaven/
+├── manage.py                 — точка входа Django (migrate, runserver, test).
+├── requirements.txt          — зависимости Python.
+├── README.md                 — описание репозитория (при наличии).
+├── chartHaven/               — конфигурация проекта Django.
+│   ├── __init__.py
+│   ├── settings.py           — основные настройки (БД, приложения, i18n).
+│   ├── settings_test.py      — тестовые настройки (SQLite :memory:).
+│   ├── urls.py               — корневые URL: admin + приложение chart.
+│   ├── wsgi.py               — WSGI-приложение для продакшен-сервера.
+│   └── asgi.py               — ASGI (при стандартном startproject).
+└── chart/                    — основное приложение «визуализация».
+    ├── __init__.py
+    ├── apps.py               — конфигурация приложения; ready() подключает сигналы.
+    ├── admin.py              — регистрация моделей в админке Django.
+    ├── models.py             — ORM-модели: Profile, UploadedFile, SavedChart.
+    ├── forms.py              — формы регистрации, профиля, смены пароля.
+    ├── urls.py               — маршруты приложения chart.
+    ├── signals.py            — автосоздание Profile при создании User.
+    ├── migrations/           — история схемы БД.
+    ├── views/                — представления, разбиты по модулям.
+    │   ├── __init__.py       — реэкспорт всех view для chart.urls.
+    │   ├── auth_views.py     — регистрация, вход, выход, AJAX-проверки.
+    │   ├── profile_views.py  — профиль, тема UI, проверка пароля/логина.
+    │   ├── charts.py         — главная страница, upload, create_chart.
+    │   ├── api.py            — API сохранённых графиков.
+    │   └── helpers.py        — доступ к файлу, оформление Plotly, дубликаты названий.
+    ├── templates/chart/      — шаблоны Django.
+    ├── static/chart/         — CSS, JS, изображения.
+    ├── templatetags/
+    │   └── avatar_tags.py    — фильтр b64encode для аватара в HTML.
+    └── tests/
+        ├── __init__.py
+        └── test_views.py     — базовые тесты маршрутов и CSRF.
+
+
+--------------------------------------------------------------------------------
+3. КОНФИГУРАЦИЯ ПРОЕКТА DJANGO (chartHaven)
+--------------------------------------------------------------------------------
+
+3.1. settings.py (основное)
+  • BASE_DIR — корень проекта (родитель каталога chartHaven).
+  • DEBUG = True (для разработки; в продакшене — False).
+  • INSTALLED_APPS: стандартные приложения Django + приложение 'chart'.
+  • MIDDLEWARE: Security, Session, Common, CsrfView, Auth, Messages, XFrameOptions.
+  • ROOT_URLCONF = 'chartHaven.urls'.
+  • TEMPLATES: бэкенд Django, APP_DIRS=True, контекст request, auth, messages.
+  • DATABASES['default']: ENGINE django.db.backends.mysql, имя БД, пользователь,
+    пароль, HOST localhost, PORT 3306 (конкретные значения — в файле, не для публикации).
+  • LANGUAGE_CODE = 'ru', TIME_ZONE = 'Asia/Yekaterinburg', USE_TZ = True.
+  • STATIC_URL = '/static/', DEFAULT_AUTO_FIELD = BigAutoField.
+  • APPEND_SLASH = True.
+
+3.2. chartHaven/urls.py
+  • path('admin/', admin.site.urls)
+  • path('', include('chart.urls')) — всё приложение на корне сайта.
+
+3.3. wsgi.py
+  • Устанавливает DJANGO_SETTINGS_MODULE = 'chartHaven.settings',
+    экспортирует application = get_wsgi_application().
+
+3.4. settings_test.py
+  • Импортирует всё из settings, переопределяет DATABASES на sqlite3 с NAME ':memory:'.
+  • Запуск тестов: python manage.py test --settings=chartHaven.settings_test
+
+
+--------------------------------------------------------------------------------
+4. МОДЕЛИ ДАННЫХ И БАЗА ДАННЫХ
+--------------------------------------------------------------------------------
+
+4.1. Стандартные таблицы Django
+При выполнении migrate создаются таблицы подсистемы аутентификации и админки,
+в частности (имена по умолчанию):
+  • auth_user — пользователи (id, username, password, is_staff, is_active, даты…).
+  • auth_group, auth_permission, связи many-to-many — при использовании групп.
+  • django_session — сессии (для гостей и авторизованных).
+  • django_admin_log, django_content_type и др.
+
+Данные в этих таблицах — учётные записи администраторов и пользователей,
+сессионные ключи; наполнение зависит от эксплуатации, не зашито в код.
+
+4.2. Таблица chart_profile (модель Profile)
+Связь один-к-одному с auth_user (поле user_id UNIQUE).
+Поля:
+  • id — первичный ключ BigAutoField.
+  • user_id — FK на auth_user, CASCADE при удалении пользователя.
+  • avatar — BinaryField, nullable; бинарные данные изображения аватара.
+  • updated_at — DateTimeField, auto_now=True.
+  • ui_theme — CharField(max_length=8), default 'light'; варианты: light, dark.
+  • email_confirmation_code — CharField(6), blank/null (наследие миграции 0002,
+    смена e-mail в UI не используется).
+  • pending_email — EmailField, blank/null (то же).
+
+Назначение: расширение учётной записи без изменения стандартной модели User.
+
+4.3. Таблица chart_uploadedfile (модель UploadedFile)
+Поля:
+  • id — PK.
+  • user_id — FK на User, nullable; NULL для анонимной загрузки.
+  • session_key — CharField(40), nullable, индекс; для гостей — ключ сессии Django.
+  • filename — имя файла (до 255 символов).
+  • data — BinaryField; полное содержимое файла в БД.
+  • uploaded_at — DateTimeField, auto_now_add.
+
+Логика: авторизованный пользователь «владеет» записями по user_id; гость —
+по совпадению session_key и user_id IS NULL. Это ограничивает доступ к файлу
+тем же браузером/сессией.
+
+4.4. Таблица chart_savedchart (модель SavedChart)
+Поля:
+  • id — PK.
+  • user_id — FK User, CASCADE (график только у зарегистрированного пользователя).
+  • uploaded_file_id — FK UploadedFile, CASCADE.
+  • chart_type — строка (line, bar, pie, hist, scatter, area).
+  • data_json — JSON: массив traces Plotly после to_dict()['data'].
+  • layout_json — JSON: объект layout Plotly.
+  • preview_html — TextField: HTML предпросмотра df.head() (таблица).
+  • columns_json — JSON-массив имён столбцов.
+  • settings_json — JSON-объект настроек UI/графика (см. раздел про create_chart).
+  • created_at — DateTimeField, auto_now_add.
+
+Связи: один пользователь — много сохранённых графиков; каждый график ссылается
+на один загруженный файл (копия данных на момент сохранения остаётся в UploadedFile).
+
+4.5. Эволюция схемы (миграции chart/migrations)
+  • 0001_initial — Profile, UploadedFile (user обязателен), SavedChart (базовые JSON).
+  • 0002 — поля email_confirmation_code, pending_email в Profile.
+  • 0003 — preview_html, columns_json в SavedChart.
+  • 0004 — settings_json в SavedChart.
+  • 0005 — ui_theme в Profile.
+  • 0006 — session_key в UploadedFile; user в UploadedFile стал optional (null=True).
+
+4.6. Индексы и ограничения
+  • session_key в UploadedFile с db_index=True для быстрого поиска по сессии гостя.
+  • Остальные индексы — по умолчанию Django (PK, FK).
+
+
+--------------------------------------------------------------------------------
+5. МАРШРУТИЗАЦИЯ (chart/urls.py)
+--------------------------------------------------------------------------------
+
+Имя маршрута          Путь                              Назначение
+-------------------- --------------------------------- ----------------------------------
+index                 ''                                Главная (конструктор графика).
+upload_file           'upload/'                         POST: загрузка CSV/Excel.
+create_chart          'create_chart/'                   POST JSON: построение графика.
+register              'register/'                       Форма регистрации.
+register_check_username 'register/check-username/'      POST JSON: проверка логина.
+register_validate_password 'register/validate-password/' POST JSON: валидация пароля Django.
+login                 'login/'                          Вход.
+logout                'logout/'                         Выход.
+profile               'profile/'                        Личный кабинет (login_required).
+verify_current_password 'profile/verify-password/'       POST JSON: верен ли текущий пароль.
+profile_check_username 'profile/check-username/'        POST JSON: свободен ли логин.
+save_user_ui_theme    'api/user-theme/'                 POST JSON: сохранить light/dark.
+get_saved_charts      'api/saved-charts/'               GET: список графиков пользователя.
+get_chart_by_id       'api/saved-charts/<int:chart_id>/' GET: данные графика; DELETE: удаление.
+
+
+--------------------------------------------------------------------------------
+6. ПРЕДСТАВЛЕНИЯ (РЕАЛИЗАЦИЯ ЛОГИКИ СЕРВЕРА)
+--------------------------------------------------------------------------------
+
+6.1. views/charts.py
+  • ALLOWED_CHART_TYPES — множество допустимых типов графиков.
+  • _axes_validation_error(df, chart_type, x_axis, y_axis) — проверка наличия
+    колонок в DataFrame; для hist допускается только ось x.
+  • index(request) — render chart/index.html.
+  • upload_file(request):
+      - Только POST; файл из request.FILES['file'].
+      - Расширения: .csv, .xlsx, .xls.
+      - Чтение в bytes; pandas read_csv / read_excel из BytesIO.
+      - Ошибки парсинга — JsonResponse 400 с текстом.
+      - Создание UploadedFile: если user.is_authenticated — user=текущий,
+        session_key=None; иначе при необходимости request.session.create(),
+        user=None, session_key=текущий ключ сессии.
+      - Ответ JSON: preview_data (HTML таблицы head), columns, uploadedFileId,
+        uploadedFileName.
+  • create_chart(request):
+      - Тело JSON: chartType, xAxis, yAxis, chartColor, chartColors, chartTitle,
+        xLabel, yLabel, lineWidth, lineStyle, bins, uploadedFileId, saveToLibrary,
+        appearance (шрифт, цвет текста, фон, сетка, легенда, позиция легенды).
+      - Загрузка UploadedFile через get_uploaded_file_for_request.
+      - Повторное чтение файла в DataFrame.
+      - Построение fig в зависимости от типа:
+          line — go.Scatter (линии+маркеры, dash из line_style);
+          bar, pie, hist, scatter, area — plotly.express.
+      - fig.update_layout для подписей осей; apply_chart_appearance(fig, appearance).
+      - Сериализация numpy в JSON-совместимые типы (to_list рекурсивно).
+      - settings_json собирается из входных параметров и appearance.
+      - Если save_to_library True: требуется аутентификация; проверка уникальности
+        «нормализованного» названия графика (_user_has_saved_chart_with_same_title);
+        SavedChart.objects.create(...).
+      - Ответ: graphData, layout, columns, preview_data, saved.
+
+6.2. views/helpers.py
+  • _normalize_saved_chart_title_for_duplicate_check — trim, пустое = «Без названия»,
+    сравнение в нижнем регистре (casefold).
+  • _user_has_saved_chart_with_same_title(user, chart_title) — обход сохранённых
+    графиков пользователя, сравнение заголовков из settings_json.
+  • get_uploaded_file_for_request(request, uploaded_file_id):
+      - Авторизованный: UploadedFile с pk и user=request.user.
+      - Гость: UploadedFile с pk, user__isnull=True, session_key равен текущей сессии.
+  • apply_chart_appearance(fig, appearance) — сброс template, шрифт, сетка осей,
+    легенда (позиции top/bottom/left/right), paper_bgcolor/plot_bgcolor.
+
+6.3. views/auth_views.py
+  • register_view — GET/POST RegisterForm; при успехе login + redirect index.
+  • register_check_username — JSON username, ответ state: empty|invalid|taken|ok.
+  • register_validate_password — validate_password Django, список сообщений об ошибках.
+  • login_view — POST username/password, authenticate, login или сообщение об ошибке.
+  • logout_view — logout, redirect index.
+
+6.4. views/profile_views.py (все с @login_required, кроме косвенно)
+  • profile_view — POST «save_profile»: UserForm + ProfileForm (аватар read в bytes);
+    POST «change_password»: PasswordChangeFormRu + update_session_auth_hash.
+  • verify_current_password — JSON password → check_password.
+  • profile_check_username — как регистрация, плюс state «current» для своего логина.
+  • save_user_ui_theme — JSON theme ∈ {light, dark} → profile.ui_theme.
+
+6.5. views/api.py
+  • get_saved_charts — список графиков пользователя с метаданными (id, тип, имя файла,
+    даты, chartTitle из settings).
+  • get_chart_by_id — GET: полные данные для восстановления на клиенте; fileData в base64;
+    DELETE: удаление записи SavedChart (только своей).
+
+
+--------------------------------------------------------------------------------
+7. ФОРМЫ (chart/forms.py)
+--------------------------------------------------------------------------------
+
+  • RegisterForm(UserCreationForm): поля username, password1, password2; русские подписи;
+    clean_username — длина >= 5, regex латиница/цифры/_, уникальность без учёта регистра;
+    save — email пустая строка.
+  • UserForm — смена логина (исключая текущий pk при проверке уникальности).
+  • PasswordChangeFormRu — русские подписи полей, класс profile-password-input.
+  • ProfileForm — необязательное поле файла аватара; save(user) пишет bytes в profile.avatar.
+
+Константы: USERNAME_REGEX, USERNAME_MIN_LENGTH = 5.
+
+
+--------------------------------------------------------------------------------
+8. СИГНАЛЫ (chart/signals.py) И ПРИЛОЖЕНИЕ (apps.py)
+--------------------------------------------------------------------------------
+
+  • При ChartConfig.ready() импортируется chart.signals.
+  • post_save на User, created=True → Profile.objects.create(user=instance).
+  • post_save на User → instance.profile.save() (обновление профиля при сохранении User).
+
+Примечание для проектирования: при массовом импорте пользователей без профиля
+нужна согласованность данных; в штатном сценарии регистрации профиль создаётся автоматически.
+
+
+--------------------------------------------------------------------------------
+9. АДМИНИСТРИРОВАНИЕ (chart/admin.py)
+--------------------------------------------------------------------------------
+
+Регистрация моделей Profile, UploadedFile, SavedChart в стандартной админке Django
+для просмотра и ручного управления записями (удобно на этапе отладки).
+
+
+--------------------------------------------------------------------------------
+10. ШАБЛОНЫ (templates/chart/)
+--------------------------------------------------------------------------------
+
+10.1. base.html
+  • lang="ru", viewport, favicon, theme-color.
+  • Ранний скрипт: window.__CHART_UI_THEME__ из profile для авторизованных, иначе null;
+    до загрузки CSS выставляется data-theme="dark" при необходимости (localStorage).
+  • Подключение reset.css, styles.css, auth.css, profile.css, theme.css.
+  • {% csrf_token %} в начале body для получения токена в формах/JS.
+  • Шапка: бургер (на index), логотипы светлый/тёмный, переключатель темы,
+    меню пользователя или ссылки Войти/Регистрация.
+  • Скрипты: GSAP, Plotly 3.0.1 с CDN; chart-core.js, chart-workspace.js,
+    chart-saved.js, chart-init.js, theme.js; inline — dropdown пользователя;
+    window.isAuthenticated из шаблона Django.
+
+10.2. index.html
+  • Наследует base; основной макет main-layout + sidebar.
+  • Вкладки: Загрузка данных, Настройки графика, Созданные графики, О приложении.
+  • Форма upload с csrf, file input, progress, предпросмотр, удаление файла.
+  • Блоки настроек по типам графика (карточки выбора типа, оси, цвета, круговая —
+    несколько цветов), расширенные настройки (шрифт, фон, легенда).
+  • Область отображения графика (div для Plotly.newPlot).
+  • Подключение profile.js / register.js на соответствующих страницах — нет,
+    они для profile/register/login.
+
+10.3. login.html, register.html, profile.html
+  • Формы аутентификации и личного кабинета в стиле общей вёрстки (auth.css, profile.css).
+
+10.4. partials/modals.html
+  • Разметка кастомного модального окна (alert), используется из chart-core.js.
+
+
+--------------------------------------------------------------------------------
+11. СТАТИЧЕСКИЕ ФАЙЛЫ
+--------------------------------------------------------------------------------
+
+11.1. CSS (chart/static/chart/css/)
+  • reset.css — сброс стилей.
+  • styles.css — основная вёрстка приложения, сайдбар, вкладки, карточки графиков.
+  • auth.css — страницы входа и регистрации.
+  • profile.css — личный кабинет.
+  • theme.css — переменные и правила для data-theme="dark".
+
+11.2. Изображения (chart/static/chart/images/)
+  • logotype.png — иконка сайта.
+  • Main-logo.png, Main-logo-dark.png — логотипы для светлой/тёмной темы.
+
+11.3. JavaScript (по файлам)
+  • chart-core.js — модальные окна; подмена alert; getCsrfToken; escapeHtml;
+    drag-and-drop файла на input.
+  • chart-workspace.js (крупный модуль) — вкладки; загрузка файла через fetch на /upload/;
+    вызов /create_chart/ с JSON; инициализация и обновление Plotly (newPlot, react, relayout);
+    localStorage: uploadedFileId, колонки, предпросмотр, настройки графика, активная вкладка;
+    экспорт изображения с подгонкой layout под тему; синхронизация полей UI с данными.
+  • chart-saved.js — загрузка списка GET /api/saved-charts/; отрисовка списка, поиск,
+    сортировка, группировка; открытие графика GET по id; удаление DELETE;
+    восстановление контекста (applySavedChartContext): вкладки, селекты осей, цвета pie.
+  • chart-init.js — при DOMContentLoaded: очистка localStorage при выходе;
+    восстановление графика и настроек из localStorage; восстановление активной вкладки;
+    для гостя запрет вкладки «Созданные графики»; loadSavedCharts при открытии tab-3;
+    слушатели input/change в настройках; аккордеон расширенных настроек.
+  • theme.js — переключение светлой/тёмной темы, localStorage chart-theme,
+    POST /api/user-theme/ для авторизованных, обновление theme-color meta.
+  • profile.js — UX личного кабинета (валидация, запросы к verify-password,
+    check-username).
+  • register.js — живые подсказки при регистрации (логин, пароль через API).
+
+
+--------------------------------------------------------------------------------
+12. API: ФОРМАТЫ JSON (КРАТКО)
+--------------------------------------------------------------------------------
+
+POST /upload/ — multipart/form-data, поле file, заголовок/куки CSRF.
+Ответ: { preview_data, columns, uploadedFileId, uploadedFileName } или { error }.
+
+POST /create_chart/ — application/json, CSRF в заголовке X-CSRFToken при необходимости.
+Тело см. раздел 6.1. Ответ при успехе: graphData, layout, columns, preview_data, saved.
+
+POST /register/check-username/ — { "username": "..." }
+Ответ: { ok, state, message }.
+
+POST /register/validate-password/ — { "password": "..." }
+Ответ: { ok, valid, messages }.
+
+POST /api/user-theme/ — { "theme": "light"|"dark" }
+
+GET /api/saved-charts/ — { "charts": [ { id, chartType, fileName, uploadedFileId,
+  createdAt, createdAtIso, chartTitle }, ... ] }
+
+GET /api/saved-charts/<id>/ — полный объект настроек + dataJson, layoutJson,
+  previewHtml, columns, fileName, fileData (base64), settings, uploadedFileId.
+
+DELETE /api/saved-charts/<id>/ — { "ok": true }
+
+
+--------------------------------------------------------------------------------
+13. БЕЗОПАСНОСТЬ И ДОСТУП К ДАННЫМ
+--------------------------------------------------------------------------------
+
+  • CSRF: включён для POST; тесты проверяют отказ без токена при enforce_csrf_checks.
+  • Сессии Django для гостей обеспечивают изоляцию uploaded_file_id между браузерами.
+  • Сохранённые графики и тема профиля — только для login_required + фильтрация по user.
+  • Пароли — хэш Django (в auth_user.password).
+  • Хранение файлов в БД увеличивает размер БД; для диплома можно обосновать как
+    упрощение развёртывания без отдельного файлового хранилища.
+
+
+--------------------------------------------------------------------------------
+14. ЗАВИСИМОСТИ (requirements.txt)
+--------------------------------------------------------------------------------
+
+  Django>=4.2.0
+  pandas>=2.0.0
+  numpy>=1.24.0
+  plotly>=5.18.0
+  openpyxl>=3.1.0  (чтение .xlsx/.xls через pandas)
+  Pillow>=10.0.0   (часто для работы с изображениями в экосистеме Django)
+  python-dotenv>=1.0.0
+
+Для MySQL дополнительно требуется драйвер (mysqlclient или PyMySQL с настройкой Django);
+в requirements.txt он может быть не перечислен — стоит добавить в дипломе в перечень
+зависимостей развёртывания явно.
+
+
+--------------------------------------------------------------------------------
+15. ТЕСТИРОВАНИЕ (chart/tests/test_views.py)
+--------------------------------------------------------------------------------
+
+Класс IndexAndCsrfTests:
+  • GET / — 200.
+  • POST /upload/ без CSRF при enforce — 403.
+  • POST /upload/ гостем с CSV — 200, есть uploadedFileId и columns.
+  • POST /create_chart/ без CSRF — 403.
+  • Сценарий: upload → create_chart line с saveToLibrary false — 200, есть graphData.
+
+Запуск с SQLite: --settings=chartHaven.settings_test
+
+
+--------------------------------------------------------------------------------
+16. ТИПОВЫЕ ПОТОКИ ДЛЯ ГЛАВЫ «ПРОЕКТИРОВАНИЕ»
+--------------------------------------------------------------------------------
+
+  • Диаграмма прецедентов: гость (загрузка, просмотр, построение без сохранения);
+    пользователь (+ сохранение, коллекция, профиль, тема на сервере); администратор (admin).
+  • Диаграмма компонентов: браузер (UI + Plotly.js) ↔ Django (views) ↔ MySQL;
+    pandas/plotly на сервере как слой аналитики.
+  • ER-диаграмма: User 1—1 Profile; User 1—* UploadedFile; User 1—* SavedChart;
+    UploadedFile 1—* SavedChart (по факту использования — много графиков могут ссылаться
+    на один файл у одного пользователя).
+  • Последовательность: загрузка файла → возврат id → запрос create_chart с id и параметрами
+    → возврат JSON traces/layout → отрисовка Plotly → опционально запись SavedChart.
+
+
+--------------------------------------------------------------------------------
+17. ТИПОВЫЕ ФРАГМЕНТЫ ДЛЯ ГЛАВЫ «РЕАЛИЗАЦИЯ»
+--------------------------------------------------------------------------------
+
+  • Указать модули views/* как разделение ответственности.
+  • Привести фрагмент моделей Profile / UploadedFile / SavedChart с пояснением полей JSON.
+  • Описать функцию create_chart как ядро: pandas → plotly → JSON → ответ.
+  • Описать клиентский цикл: fetch + Plotly.newPlot + localStorage.
+  • Упомянуть интернационализацию интерфейса (русские строки в шаблонах и формах).
+
+
+--------------------------------------------------------------------------------
+КОНЕЦ ДОКУМЕНТА
+--------------------------------------------------------------------------------

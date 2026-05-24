@@ -29,5 +29,6 @@ media/
 .DS_Store
 Thumbs.db
 
-# Project specific
-uploads/ 
+# Project specific — временные файлы загрузок (не коммитить)
+uploads/
+chart/uploads/

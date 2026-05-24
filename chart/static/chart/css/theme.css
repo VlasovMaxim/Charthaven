@@ -1,0 +1,591 @@
+/* Переключатель темы в шапке */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 179, 15, 0.75);
+  box-shadow: 0 0 0 2px rgba(255, 179, 15, 0.2);
+  outline: none;
+}
+
+.theme-toggle__icon--moon,
+.theme-toggle__icon--sun {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.theme-toggle__icon--sun {
+  display: none;
+}
+
+html[data-theme="dark"] .theme-toggle__icon--moon {
+  display: none;
+}
+
+html[data-theme="dark"] .theme-toggle__icon--sun {
+  display: block;
+}
+
+@media (max-width: 520px) {
+  .theme-toggle {
+    width: 32px;
+    height: 32px;
+  }
+  .theme-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  .theme-toggle {
+    width: 30px;
+    height: 30px;
+  }
+  .theme-toggle svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+html[data-theme="dark"] .burger__line {
+  box-shadow: none;
+}
+
+/* ========== Тёмная тема ========== */
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] body {
+  background-color: #0b1016;
+}
+
+html[data-theme="dark"] .modal-content {
+  background-color: #1a2332;
+  color: #e6edf3;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] #alert-message {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .close-btn {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .close-btn:hover {
+  color: #f1f5f9;
+}
+
+/* Шапка */
+html[data-theme="dark"] .header {
+  background-color: #0d1829;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Боковая панель */
+html[data-theme="dark"] .sidebar {
+  background-color: #0f1724;
+  color: #e8eef5;
+}
+
+html[data-theme="dark"] .sidebar-header {
+  background-color: #1e3a4a;
+  border-bottom-color: rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="dark"] .tab-item {
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="dark"] .tab-item.disabled:hover {
+  background-color: transparent;
+}
+
+html[data-theme="dark"] .sidebar-content {
+  background-color: #0f1724;
+}
+
+/* Рабочая зона графика */
+html[data-theme="dark"] .chart-workspace {
+  background: linear-gradient(165deg, #0f141c 0%, #151d28 45%, #121820 100%);
+}
+
+/* Логотип в шапке: светлый для светлой темы и тёмный вариант для dark */
+.logo-img--dark {
+  display: none;
+}
+
+html[data-theme="dark"] .logo-img--light {
+  display: none;
+}
+
+html[data-theme="dark"] .logo-img--dark {
+  display: inline-block;
+}
+
+html[data-theme="dark"] .chart-toolbar {
+  background: linear-gradient(135deg, #0d1829 0%, #152238 55%, #0d1829 100%);
+  border-bottom-color: rgba(255, 179, 15, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* Подложка области графика — из Plotly (paper_bgcolor), не второй градиент поверх */
+html[data-theme="dark"] .chart-surface {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Фон видимой области задаёт Plotly (paper_bgcolor); иначе градиент контейнера перекрывает смену цвета в тёмной теме */
+html[data-theme="dark"] #chart-container {
+  background: transparent;
+}
+
+html[data-theme="dark"] #chart-container:empty::before {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] #chart-container .chart-error {
+  background: rgba(253, 21, 27, 0.12);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+}
+
+html[data-theme="dark"] .chart-toolbar__actions .download-format-label {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+html[data-theme="dark"] .download-format-select {
+  background: rgba(20, 28, 40, 0.95);
+  color: #e6edf3;
+  border-color: rgba(255, 179, 15, 0.45);
+}
+
+html[data-theme="dark"] .download-format-select option {
+  background: #1a2332;
+  color: #e6edf3;
+}
+
+/* Все select в сайдбаре и настройках */
+html[data-theme="dark"] .sidebar select,
+html[data-theme="dark"] .settings-section select,
+html[data-theme="dark"] select.input-select {
+  background-color: #141c28;
+  color: #e6edf3;
+  border-color: rgba(255, 255, 255, 0.18);
+  accent-color: #437f97;
+}
+
+html[data-theme="dark"] .sidebar select:focus,
+html[data-theme="dark"] .settings-section select:focus,
+html[data-theme="dark"] select.input-select:focus {
+  border-color: #437f97;
+  box-shadow: 0 0 0 2px rgba(67, 127, 151, 0.35);
+  outline: none;
+}
+
+html[data-theme="dark"] .sidebar select option,
+html[data-theme="dark"] .settings-section select option,
+html[data-theme="dark"] select option {
+  background-color: #1a2332;
+  color: #e6edf3;
+}
+
+/* Основная форма «Настройки графика» */
+html[data-theme="dark"] .settings-section .form-group input:not([type="checkbox"]):not([type="color"]),
+html[data-theme="dark"] .settings-section .form-group select,
+html[data-theme="dark"] .settings-section .form-group textarea {
+  background-color: #141c28;
+  color: #e6edf3;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+html[data-theme="dark"] .settings-section .form-group input:focus,
+html[data-theme="dark"] .settings-section .form-group select:focus,
+html[data-theme="dark"] .settings-section .form-group textarea:focus {
+  border-color: #437f97;
+  box-shadow: 0 0 0 2px rgba(67, 127, 151, 0.3);
+  outline: none;
+}
+
+html[data-theme="dark"] .settings-section .form-group label {
+  color: #e8eef5;
+}
+
+/* Дополнительные настройки — кнопка и панель */
+html[data-theme="dark"] .advanced-settings-btn {
+  background: linear-gradient(180deg, #243549 0%, #1a2332 100%);
+  color: #e6edf3;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+html[data-theme="dark"] .advanced-settings-btn:hover {
+  background: #2a3f56;
+  border-color: #5a9fb8;
+  color: #fff;
+}
+
+html[data-theme="dark"] .advanced-settings-btn__chevron {
+  color: #7eb8cc;
+}
+
+html[data-theme="dark"] .advanced-settings {
+  background: #1a2332;
+}
+
+html[data-theme="dark"] .advanced-settings.advanced-settings--open {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* Загрузка данных */
+html[data-theme="dark"] .upload-section {
+  background-color: #1a2332;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="dark"] .upload-section h2 {
+  color: #e8eef5;
+}
+
+html[data-theme="dark"] .file-label {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .file-input {
+  color: #e6edf3;
+  background-color: #141c28;
+  border-color: rgba(255, 255, 255, 0.12);
+  border-style: dashed;
+}
+
+html[data-theme="dark"] .file-input.dragging {
+  background-color: #152a20;
+}
+
+html[data-theme="dark"] .error-message {
+  background-color: #3d1518;
+  color: #fecaca;
+  border-color: #7f1d1d;
+}
+
+html[data-theme="dark"] .data-preview {
+  background-color: #0f141c;
+}
+
+/* Карточки типов графиков */
+html[data-theme="dark"] .chart-type-selection h3 {
+  color: #e8eef5;
+}
+
+html[data-theme="dark"] .chart-card {
+  background-color: #1a2332;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .chart-card p {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .settings-section .advanced-settings .form-group label {
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .settings-section .advanced-settings .form-group input:not([type="checkbox"]):not([type="color"]),
+html[data-theme="dark"] .settings-section .advanced-settings .form-group select,
+html[data-theme="dark"] .settings-section .advanced-settings .form-group textarea {
+  background-color: #141c28;
+  color: #e6edf3;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+html[data-theme="dark"] .settings-section .advanced-settings .form-group input:focus,
+html[data-theme="dark"] .settings-section .advanced-settings .form-group select:focus,
+html[data-theme="dark"] .settings-section .advanced-settings .form-group textarea:focus {
+  border-color: #437f97;
+  box-shadow: 0 0 0 2px rgba(67, 127, 151, 0.3);
+  outline: none;
+}
+
+html[data-theme="dark"] .settings-section .advanced-settings .advanced-settings__lead {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .settings-section .advanced-settings .advanced-settings__check {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .saved-charts-heading {
+  color: #e8eef5;
+}
+
+html[data-theme="dark"] .saved-charts-search,
+html[data-theme="dark"] .saved-charts-select {
+  background: #141c28;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e6edf3;
+}
+
+html[data-theme="dark"] .saved-charts-group-title {
+  color: #94a3b8;
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .saved-chart-card {
+  background: #1a2332;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="dark"] .saved-chart-card:hover {
+  background: #1e2d3f;
+  border-color: #849324;
+}
+
+html[data-theme="dark"] .saved-chart-card__title {
+  color: #e8eef5;
+}
+
+html[data-theme="dark"] .saved-chart-card__line {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .saved-chart-delete {
+  background: #1a2332;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .saved-charts-message {
+  background: #141c28;
+  color: #cbd5e1;
+}
+
+/* Вход / регистрация */
+html[data-theme="dark"] .auth-shell {
+  background: linear-gradient(165deg, #0c1218 0%, #121a24 45%, #0e141b 100%);
+}
+
+html[data-theme="dark"] .auth-card {
+  background: #1a2332;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+html[data-theme="dark"] .auth-card__title {
+  color: #e8eef5;
+}
+
+html[data-theme="dark"] .auth-card__subtitle {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .auth-form label,
+html[data-theme="dark"] .auth-form .auth-label {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .auth-form input[type="text"],
+html[data-theme="dark"] .auth-form input[type="password"],
+html[data-theme="dark"] .auth-form input[type="email"] {
+  background: #141c28;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e6edf3;
+}
+
+html[data-theme="dark"] .auth-footer {
+  border-top-color: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .auth-footer a {
+  color: #7eb8cc;
+}
+
+html[data-theme="dark"] .auth-footer a:hover {
+  color: #ffb30f;
+}
+
+html[data-theme="dark"] .page-back {
+  background: transparent;
+  border: none;
+  color: #7eb8cc;
+}
+
+html[data-theme="dark"] .page-back:hover {
+  color: #ffb30f;
+}
+
+/* Личный кабинет */
+html[data-theme="dark"] .profile-page {
+  background: linear-gradient(165deg, #0c1218 0%, #121a24 45%, #0e141b 100%);
+}
+
+html[data-theme="dark"] .profile-page__title {
+  color: #e8eef5;
+}
+
+html[data-theme="dark"] .profile-page__subtitle {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .profile-card {
+  background: #1a2332;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="dark"] .profile-card__title {
+  color: #e8eef5;
+  border-bottom-color: #849324;
+}
+
+html[data-theme="dark"] .profile-form label,
+html[data-theme="dark"] .profile-field__label {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .profile-form input[type="text"],
+html[data-theme="dark"] .profile-form input[type="password"],
+html[data-theme="dark"] .profile-form input[type="file"] {
+  background: #141c28;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e6edf3;
+}
+
+html[data-theme="dark"] .profile-field__hint {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .profile-current-avatar__label {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .profile-messages .success {
+  background: #142e1f;
+  color: #6ee7b7;
+  border-color: #166534;
+}
+
+html[data-theme="dark"] .profile-messages .error {
+  background: #3d1518;
+  color: #fecaca;
+  border-color: #7f1d1d;
+}
+
+/* Страница «О приложении» */
+html[data-theme="dark"] .about-page {
+  --about-accent: #5a9fb8;
+  --about-accent-dark: #94c4d6;
+  --about-gold: #ffb30f;
+  --about-olive: #9db032;
+  --about-text: #e2e8f0;
+  --about-muted: #94a3b8;
+  --about-border: rgba(255, 255, 255, 0.12);
+  --about-soft: #151d28;
+  background: #1a2332;
+  color: var(--about-text);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="dark"] .about-page:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="dark"] .about-hero {
+  background: linear-gradient(160deg, #1e2d3f 0%, #1a2332 55%, #16202e 100%);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .about-hero__title {
+  color: #e8eef5;
+}
+
+html[data-theme="dark"] .about-hero__tagline {
+  color: var(--about-muted);
+}
+
+html[data-theme="dark"] .about-lead {
+  color: var(--about-text);
+}
+
+html[data-theme="dark"] .about-lead strong {
+  color: var(--about-gold);
+}
+
+html[data-theme="dark"] .about-features__heading {
+  color: #e8eef5;
+  border-bottom-color: var(--about-olive);
+}
+
+html[data-theme="dark"] .about-features__item {
+  background: var(--about-soft);
+  border-color: var(--about-border);
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .about-features__item:hover {
+  background: #1e2d3f;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+html[data-theme="dark"] .about-features__icon {
+  background: var(--about-accent);
+  color: #fff;
+}
+
+html[data-theme="dark"] .about-footer {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .about-link {
+  background: #141c28;
+  color: #94c4d6;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .about-link:hover {
+  background: #1e2d3f;
+  border-color: rgba(255, 179, 15, 0.65);
+  color: #ffb30f;
+}
+
+html[data-theme="dark"] .about-link__icon {
+  color: #7eb8cc;
+}
+
+/* Мобильный сайдбар */
+@media (max-width: 900px) {
+  html[data-theme="dark"] .sidebar {
+    background: #0f1724;
+    box-shadow: 2px 0 24px rgba(0, 0, 0, 0.45);
+  }
+}
